@@ -1,83 +1,65 @@
 package com.gagan.jdbc;
 
-
-import com.gagan.jdbc.DBConfig;
-import com.gagan.jdbc.DBConfig.DatabaseType;
-
 import java.sql.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DataBase {
 
-    private static final Logger LOG = Logger.getLogger(DataBase.class.getName());
+    private final Logger LOG;
 
-    private Connection connection;
-    private PreparedStatement preparedStatement;
-    private ResultSet resultSet;
-    private DBConfig dbConfig;
-    private DatabaseType dbType;
+    // Constructor accepting the caller class for dynamic logging
+    public DataBase(Class<?> callerClass) {
+        LOG = Logger.getLogger(callerClass.getName());
+        LOG.info("DataBase instance created by: " + callerClass.getName());
+    }
 
     // Establish Connection with optional DBConfig and DatabaseType
-    public Connection getOIMConnection(DBConfig dbConfig, DatabaseType dbType) {
-        LOG.info("Start :: getOIMConnection() with dbType: " + dbType);
-        if (dbConfig == null && dbType != DatabaseType.MANUAL) {
-            this.dbConfig = new DBConfig(dbType);
-        } else {
-            this.dbConfig = dbConfig;
+    public Connection getConnection(DBConfig dbConfig, DBConfig.DatabaseType dbType) throws SQLException {
+        LOG.info("Start :: getConnection() with dbType: " + dbType);
+        if (dbConfig == null && dbType != DBConfig.DatabaseType.MANUAL) {
+            dbConfig = new DBConfig(dbType, getClass());
         }
-        this.dbType = dbType;
 
+        Connection connection = null;
         try {
-            // Load the JDBC driver dynamically
-            Class.forName(this.dbConfig.getDriverClassName());
-            connection = DriverManager.getConnection(this.dbConfig.getJdbcUrl(), this.dbConfig.getUsername(), this.dbConfig.getPassword());
-            LOG.log(Level.INFO, "Database Connected Successfully with dbType: " + dbType);
-        } catch (ClassNotFoundException e) {
-            LOG.log(Level.SEVERE, "JDBC Driver not found", e);
+            if (dbType == DBConfig.DatabaseType.MANUAL && dbConfig != null) {
+                // For manual, use custom DBConfig to get connection
+                connection = DriverManager.getConnection(dbConfig.getJdbcUrl(), dbConfig.getUsername(), dbConfig.getPassword());
+                LOG.info("Current connection using Manual configuration");
+            } else if (dbType == DBConfig.DatabaseType.PLATFORM) {
+                // For Platform Operational DS
+                // connection = Platform.getOperationalDS().getConnection();
+                LOG.info("Current connection using Platform Operational DS");
+            } else {
+                // For MySQL and Oracle, use default DBConfig
+                if (dbType == DBConfig.DatabaseType.MYSQL) {
+                    dbConfig = new DBConfig(DBConfig.DatabaseType.MYSQL, getClass());
+                } else if (dbType == DBConfig.DatabaseType.ORACLE) {
+                    dbConfig = new DBConfig(DBConfig.DatabaseType.ORACLE, getClass());
+                }
+                connection = DriverManager.getConnection(dbConfig.getJdbcUrl(), dbConfig.getUsername(), dbConfig.getPassword());
+                LOG.info("Current connection using " + dbType + " configuration");
+            }
+            LOG.info("Database Connected Successfully with dbType: " + dbType);
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Connection Failed", e);
+            throw e;
         }
-
         return connection;
     }
 
-    // Execute Query with Dynamic Parameters
-    public ResultSet executeQuery(String query, String... params) throws SQLException {
-        LOG.info("Start :: executeQuery() with dbType: " + dbType);
-        if (connection == null) {
-            connection = getOIMConnection(dbConfig, dbType);
-        }
-        if (connection == null) {
-            throw new SQLException("Unable to establish a connection");
-        }
-
-        preparedStatement = connection.prepareStatement(query);
-        for (int i = 0; i < params.length; i++) {
-            preparedStatement.setString(i + 1, params[i]);
-        }
-        resultSet = preparedStatement.executeQuery();
-        LOG.log(Level.INFO, "Query executed successfully with dbType: " + dbType);
-        return resultSet;
-    }
-
     // Close Resources
-    public void close() {
-        try {
-            if (resultSet != null) {
-                resultSet.close();
-                LOG.info("End :: resultSet.close()");
+    public void close(AutoCloseable... resources) {
+        for (AutoCloseable resource : resources) {
+            if (resource != null) {
+                try {
+                    resource.close();
+                    LOG.info(resource.getClass().getSimpleName() + " closed successfully");
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Failed to close " + resource.getClass().getSimpleName(), e);
+                }
             }
-            if (preparedStatement != null) {
-                preparedStatement.close();
-                LOG.info("End :: preparedStatement.close()");
-            }
-            if (connection != null) {
-                connection.close();
-                LOG.info("End :: connection.close() with dbType: " + dbType);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to close resources", e);
         }
     }
 }

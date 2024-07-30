@@ -1,6 +1,11 @@
 package com.gagan.jdbc;
 
+import java.util.logging.Logger;
+
 public class DBConfig {
+
+    private final Logger LOG;
+
     private String jdbcUrl;
     private String username;
     private String password;
@@ -22,15 +27,16 @@ public class DBConfig {
     public enum DatabaseType {
         MYSQL,
         ORACLE,
-        MANUAL
+        MANUAL,
+        PLATFORM
     }
 
-    public DBConfig() {
-        // Default to MySQL Database
-        this(DatabaseType.MYSQL);
+    public DBConfig(Class<?> callerClass) {
+        this(DatabaseType.MYSQL, callerClass);
     }
 
-    public DBConfig(DatabaseType dbType) {
+    public DBConfig(DatabaseType dbType, Class<?> callerClass) {
+        LOG = Logger.getLogger(callerClass.getName());
         if (dbType == DatabaseType.MYSQL) {
             this.jdbcUrl = DEFAULT_DB1_JDBC_URL;
             this.username = DEFAULT_DB1_USERNAME;
@@ -45,7 +51,8 @@ public class DBConfig {
     }
 
     // Default
-    public DBConfig(String jdbcUrl, String username, String password, String driverClassName) {
+    public DBConfig(String jdbcUrl, String username, String password, String driverClassName, Class<?> callerClass) {
+        LOG = Logger.getLogger(callerClass.getName());
         this.jdbcUrl = (jdbcUrl != null && !jdbcUrl.isEmpty()) ? jdbcUrl : DEFAULT_DB1_JDBC_URL;
         this.username = (username != null && !username.isEmpty()) ? username : DEFAULT_DB1_USERNAME;
         this.password = (password != null && !password.isEmpty()) ? password : DEFAULT_DB1_PASSWORD;
@@ -53,7 +60,8 @@ public class DBConfig {
     }
 
     // Overloaded constructor for specifying database type with custom values
-    public DBConfig(DatabaseType dbType, String jdbcUrl, String username, String password, String driverClassName) {
+    public DBConfig(DatabaseType dbType, String jdbcUrl, String username, String password, String driverClassName, Class<?> callerClass) {
+        LOG = Logger.getLogger(callerClass.getName());
         if (dbType == DatabaseType.MANUAL) {
             this.jdbcUrl = jdbcUrl;
             this.username = username;
