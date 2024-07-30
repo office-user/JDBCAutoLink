@@ -15,19 +15,24 @@ public class DataBase {
     private Connection connection;
     private PreparedStatement preparedStatement;
     private ResultSet resultSet;
+    private DBConfig dbConfig;
+    private DatabaseType dbType;
 
     // Establish Connection with optional DBConfig and DatabaseType
     public Connection getOIMConnection(DBConfig dbConfig, DatabaseType dbType) {
-        LOG.info("Start :: getOIMConnection()");
-        if (dbConfig == null) {
-            dbConfig = new DBConfig(dbType);
+        LOG.info("Start :: getOIMConnection() with dbType: " + dbType);
+        if (dbConfig == null && dbType != DatabaseType.MANUAL) {
+            this.dbConfig = new DBConfig(dbType);
+        } else {
+            this.dbConfig = dbConfig;
         }
+        this.dbType = dbType;
 
         try {
             // Load the JDBC driver dynamically
-            Class.forName(dbConfig.getDriverClassName());
-            connection = DriverManager.getConnection(dbConfig.getJdbcUrl(), dbConfig.getUsername(), dbConfig.getPassword());
-            LOG.log(Level.INFO, "Database Connected Successfully");
+            Class.forName(this.dbConfig.getDriverClassName());
+            connection = DriverManager.getConnection(this.dbConfig.getJdbcUrl(), this.dbConfig.getUsername(), this.dbConfig.getPassword());
+            LOG.log(Level.INFO, "Database Connected Successfully with dbType: " + dbType);
         } catch (ClassNotFoundException e) {
             LOG.log(Level.SEVERE, "JDBC Driver not found", e);
         } catch (SQLException e) {
@@ -38,10 +43,8 @@ public class DataBase {
     }
 
     // Execute Query with Dynamic Parameters
-    public ResultSet executeQuery(DBConfig dbConfig, DatabaseType dbType, String query, String... params) throws SQLException {
-        if (dbConfig == null) {
-            dbConfig = new DBConfig(dbType);
-        }
+    public ResultSet executeQuery(String query, String... params) throws SQLException {
+        LOG.info("Start :: executeQuery() with dbType: " + dbType);
         if (connection == null) {
             connection = getOIMConnection(dbConfig, dbType);
         }
@@ -54,6 +57,7 @@ public class DataBase {
             preparedStatement.setString(i + 1, params[i]);
         }
         resultSet = preparedStatement.executeQuery();
+        LOG.log(Level.INFO, "Query executed successfully with dbType: " + dbType);
         return resultSet;
     }
 
@@ -70,7 +74,7 @@ public class DataBase {
             }
             if (connection != null) {
                 connection.close();
-                LOG.info("End :: connection.close()");
+                LOG.info("End :: connection.close() with dbType: " + dbType);
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to close resources", e);
