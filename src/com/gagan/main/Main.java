@@ -11,18 +11,23 @@ import java.util.logging.Logger;
 public class Main {
 
     private static final Logger LOG = Logger.getLogger(Main.class.getName());
+    private static String CLASS_NAME = Main.class.getName();
     private static Connection connection = null;
     private static final String QUERY = "SELECT * FROM users WHERE id = ?";
 
     public static void main(String[] args) {
+
+        // creating variable for seeing which method currently running.
+        String methodName = "Main";
+        LOG.entering(CLASS_NAME, methodName); // Log
         DataBase db = new DataBase(Main.class);
         int userId = 1;
 
         try {
             // Change Default Value :- ORACLE, MYSQL, PLATFORM ;
             // Platform Operational DS
-            connection = db.getConnection(null, DatabaseType.ORACLE);
-            executeQueryAndLogResults(QUERY, String.valueOf(userId), db);
+            // connection = db.getConnection(null, DatabaseType.MYSQL);
+            // executeQueryAndLogResults(QUERY, String.valueOf(userId), db);
 
             // Manual
             DBConfig customDBConfig = new DBConfig(
@@ -37,7 +42,7 @@ public class Main {
 
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "SQL Exception occurred", e);
+            LOG.log(Level.SEVERE, methodName + " :: SQL Exception occurred :: ", e);
         } finally {
             // Close connection
             db.close(connection);
@@ -46,6 +51,12 @@ public class Main {
 
     // Execute query and log results
     private static void executeQueryAndLogResults(String query, String userId, DataBase db) {
+
+        // creating variable for seeing which method currently running.
+        String methodName = "executeQueryAndLogResults()";
+        LOG.entering(CLASS_NAME, methodName, new Object[] { userId });
+
+
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
         try {
@@ -67,10 +78,10 @@ public class Main {
                         resultSet.getString("email"),
                         resultSet.getTimestamp("created_at")));
             } else {
-                LOG.info("No user found with ID " + userId);
+                LOG.info(methodName + " :: No user found with ID :: " + userId);
             }
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "SQL Exception occurred during query execution", e);
+            LOG.log(Level.SEVERE, methodName + " :: SQL Exception occurred during query execution :: " + e);
         } finally {
             // Close resources
             db.close(resultSet, preparedStatement);
