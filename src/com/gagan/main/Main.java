@@ -26,8 +26,8 @@ public class Main {
         try {
             // Change Default Value :- ORACLE, MYSQL, PLATFORM ;
             // Platform Operational DS
-            // connection = db.getConnection(null, DatabaseType.MYSQL);
-            // executeQueryAndLogResults(QUERY, String.valueOf(userId), db);
+//             connection = db.getConnection(null, DatabaseType.ORACLE);
+//             executeQueryAndLogResults(QUERY, String.valueOf(userId), db);
 
             // Manual
             DBConfig customDBConfig = new DBConfig(
@@ -71,7 +71,7 @@ public class Main {
 
             // Process result set
             if (resultSet.next()) {
-                LOG.info(String.format("ID: %s, Username: %s, Password Hash: %s, Email: %s, Created At: %s",
+                LOG.info( methodName + " :: ---> " + String.format("ID: %s, Username: %s, Password Hash: %s, Email: %s, Created At: %s",
                         resultSet.getInt("id"),
                         resultSet.getString("username"),
                         resultSet.getString("password_hash"),
